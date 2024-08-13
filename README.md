@@ -1,3 +1,4 @@
+
 ## SigNoz OpenFeature LLM Demo
 
 
@@ -33,6 +34,13 @@ ANTHROPIC_API_KEY=<your ANTHROPIC key>
 
 ![client-llm](https://github.com/user-attachments/assets/b351cdba-c4c5-4e54-9acd-63e9e52574ee)
 
+
 ![openfeature-llm](https://github.com/user-attachments/assets/22c3a623-9e4e-4ad6-a8cc-3a2ce3bc2bc6)
+
+
+![logs-2](https://github.com/user-attachments/assets/c37c6030-a08b-48e3-acd7-9a52cbed74d8)
+
+
+![LLM-logs](https://github.com/user-attachments/assets/46ba6ab6-0332-4bbb-ac3b-414e2c075db4)
 
 
