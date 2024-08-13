@@ -31,3 +31,8 @@ ANTHROPIC_API_KEY=<your ANTHROPIC key>
 
 `npm start`
 
+![client-llm](https://github.com/user-attachments/assets/b351cdba-c4c5-4e54-9acd-63e9e52574ee)
+
+![openfeature-llm](https://github.com/user-attachments/assets/22c3a623-9e4e-4ad6-a8cc-3a2ce3bc2bc6)
+
+
