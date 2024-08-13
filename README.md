@@ -13,11 +13,13 @@ export OTEL_SERVICE_NAME="signoz-openfeature-llm"
 
 Add `.env` file in root folder with: 
 
+```
 LAUNCHDARKLY_SDK_KEY=<your LD key>
 
 OPENAI_API_KEY=<your OPENAI key>
 
 ANTHROPIC_API_KEY=<your ANTHROPIC key>
+```
 
 ### Run the server 
 
