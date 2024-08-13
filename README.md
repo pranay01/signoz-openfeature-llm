@@ -28,5 +28,6 @@ ANTHROPIC_API_KEY=<your ANTHROPIC key>
 ### Run the client
 
 `cd client`
+
 `npm start`
 
