@@ -8,15 +8,23 @@ const { TracingHook } = require('@openfeature/open-telemetry-hooks');
 const axios = require('axios');
 const Anthropic = require('@anthropic-ai/sdk');
 const logsAPI = require('@opentelemetry/api-logs');
-const { LoggerProvider, BatchLogRecordProcessor } = require('@opentelemetry/sdk-logs');
+const { LoggerProvider, BatchLogRecordProcessor, ConsoleLogRecordExporter } = require('@opentelemetry/sdk-logs');
 const { OTLPLogExporter } = require('@opentelemetry/exporter-logs-otlp-http');
 const { OpenTelemetryTransportV3 } = require('@opentelemetry/winston-transport');
+const { Resource } = require('@opentelemetry/resources');
+const {
+    SEMRESATTRS_SERVICE_NAME,
+} = require('@opentelemetry/semantic-conventions');
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 
 const port = 3001;
+
+const resource = new Resource({
+    [SEMRESATTRS_SERVICE_NAME]: 'signoz-openfeature-llm',
+});
 
 const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY,
@@ -25,10 +33,13 @@ const anthropic = new Anthropic({
 
 OpenFeature.addHooks(new TracingHook());
 
-const loggerProvider = new LoggerProvider();
+const loggerProvider = new LoggerProvider({
+    resource: resource
+});
 
 loggerProvider.addLogRecordProcessor(
     new BatchLogRecordProcessor(
+        // new ConsoleLogRecordExporter()
         new OTLPLogExporter({
             url: 'https://ingest.eu.signoz.cloud:443/v1/logs',
             // headers: { 'signoz-access-token': config.signozAccessToken },
@@ -36,6 +47,13 @@ loggerProvider.addLogRecordProcessor(
         })
     )
 );
+
+// loggerProvider.addLogRecordProcessor(
+//     new BatchLogRecordProcessor(
+//         new ConsoleLogRecordExporter()
+//     )
+//   );
+
 logsAPI.logs.setGlobalLoggerProvider(loggerProvider);
 
 async function flushLogger() {
@@ -46,7 +64,9 @@ const winstonLogger = winston.createLogger({
 
     exitOnError: false,
 
-    transports: [new winston.transports.Console(), new OpenTelemetryTransportV3()],
+    transports: [new winston.transports.Console(), new OpenTelemetryTransportV3(
+        {loggerProvider: loggerProvider}
+    )],
 });
 
 let client;
@@ -64,7 +84,7 @@ app.post('/api/ask', async (req, res) => {
   try {
     const llmModel = await client.getStringValue("llm-flag", 'openai', context);
     const { question } = req.body;
-    winstonLogger.info("hello", {messageText : question});
+    winstonLogger.info(`LLM Model used is ${llmModel}`, {messageText : question});
 
     let answer;
     if (llmModel === 'openai') {
