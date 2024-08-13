@@ -1,11 +1,16 @@
 require('dotenv').config();
 const express = require('express');
+const winston = require('winston');
 const cors = require('cors');
 const { OpenFeature } = require('@openfeature/server-sdk');
 const { LaunchDarklyProvider } = require('@launchdarkly/openfeature-node-server');
 const { TracingHook } = require('@openfeature/open-telemetry-hooks');
 const axios = require('axios');
 const Anthropic = require('@anthropic-ai/sdk');
+const logsAPI = require('@opentelemetry/api-logs');
+const { LoggerProvider, BatchLogRecordProcessor } = require('@opentelemetry/sdk-logs');
+const { OTLPLogExporter } = require('@opentelemetry/exporter-logs-otlp-http');
+const { OpenTelemetryTransportV3 } = require('@opentelemetry/winston-transport');
 
 const app = express();
 app.use(cors());
@@ -19,6 +24,30 @@ const anthropic = new Anthropic({
 
 
 OpenFeature.addHooks(new TracingHook());
+
+const loggerProvider = new LoggerProvider();
+
+loggerProvider.addLogRecordProcessor(
+    new BatchLogRecordProcessor(
+        new OTLPLogExporter({
+            url: 'https://ingest.eu.signoz.cloud:443/v1/logs',
+            // headers: { 'signoz-access-token': config.signozAccessToken },
+            // keepAlive: true,
+        })
+    )
+);
+logsAPI.logs.setGlobalLoggerProvider(loggerProvider);
+
+async function flushLogger() {
+    await loggerProvider.forceFlush();
+}
+
+const winstonLogger = winston.createLogger({
+
+    exitOnError: false,
+
+    transports: [new winston.transports.Console(), new OpenTelemetryTransportV3()],
+});
 
 let client;
 
@@ -35,6 +64,7 @@ app.post('/api/ask', async (req, res) => {
   try {
     const llmModel = await client.getStringValue("llm-flag", 'openai', context);
     const { question } = req.body;
+    winstonLogger.info("hello", {messageText : question});
 
     let answer;
     if (llmModel === 'openai') {
@@ -48,8 +78,9 @@ app.post('/api/ask', async (req, res) => {
     res.json({ answer, llmModel });
   } catch (error) {
     console.error('Error in /api/ask:', error);
+    winstonLogger.error(`Event Failed for ${error}`);
     res.status(500).json({ error: error.message });
-  }
+  } await flushLogger()
 });
 
 async function callOpenAI(question) {
